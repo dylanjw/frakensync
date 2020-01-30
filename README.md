@@ -9,12 +9,12 @@ Its turtles all the way down.
 ## Be kind to turtles.
 
 Wouldn't it be cool if we could write some code that could be expanded into both native
-synchronous and native asynchronous variants, without having to jam one type of turtle into the 
+synchronous and native asynchronous variants instead of having to jam one type of turtle into the 
 other?
 
 
 ``` python
-from pacro.async import (
+from pacro.bisync import (
     bisync,
     await_assign,
     await_return,
@@ -37,7 +37,7 @@ def update_conversion_rate_middleware(make_request):
 
 ## How the hell does this work?
 
-The above `update_conversion_rate_middleware` function gets expanded by modifying the ast into
+The above `update_conversion_rate_middleware` function gets expanded by modifying the `ast` into
 something equivalent to the following:
 
 ``` python
@@ -60,7 +60,7 @@ def update_conversion_rate_middleware_sync(make_request):
         return make_request(method, params)
 ```
 
-After the function is expanded into the two variants, `pacro` will look through the ast for
+After the function is expanded into the two variants, `pacro` will look through the `ast` for
 anywhere `update_conversion_rate_middleware` is called and replace it with the appropriate 
 generated function which in this case will depend on whether `make_request` is a coroutine
 and if `update_conversion_rate_middleware` is being awaited.
@@ -68,7 +68,7 @@ and if `update_conversion_rate_middleware` is being awaited.
 One limitation is that where ever `update_conversion_rate_middleware` is called, 
 it needs to be know if the `make_request` is a coroutine or a function before runtime.
 
-`pacro` is a library of tools that generate python code by modifiying your code's ast. 
+`pacro` is a library of tools that generate python code by modifiying your code's `ast`. 
 
 `pacro` is being developed to solve the challenge of code reuse with asynchronous/synchronous 
 code, but it will eventually be extended to a general macro implementation.
