@@ -65,7 +65,7 @@ anywhere `update_conversion_rate_middleware` is called and replace it with the a
 generated function which in this case will depend on whether `make_request` is a coroutine
 and if `update_conversion_rate_middleware` is being awaited.
 
-One limitation is that where ever `update_conversion_rate_middleware` is called, 
+`pacro` has limitations. One limitation is that where ever `update_conversion_rate_middleware` is called, 
 it needs to be know if the `make_request` is a coroutine or a function before runtime.
 
 `pacro` is a library of tools that generate python code by modifiying your code's `ast`. 

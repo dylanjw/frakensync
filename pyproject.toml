@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "pacro"
+version = "0.0.0"
+description = "Macros for Python!"
+authors = ["Dylan Wilson <dylanjw@protonmail.com>"]
+
+[tool.poetry.dependencies]
+python = ">=3.6,<3.9"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.3.5"
+pytest-asyncio = "^0.10.0"
+asyncio = "^3.4.3"
+flake8 = "^3.7.9"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
