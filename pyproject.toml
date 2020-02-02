@@ -6,6 +6,7 @@ authors = ["Dylan Wilson <dylanjw@protonmail.com>"]
 
 [tool.poetry.dependencies]
 python = ">=3.6,<3.9"
+astor = "^0.8.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.3.5"
