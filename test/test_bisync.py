@@ -82,7 +82,7 @@ def test_dual_sleep_not_coro():
     assert(is_sync_caller())
 
 
-@bisync(namespace=[time])
+@bisync(namespace=[time, asyncio])
 async def bisleep():
     await BisyncOption(
         awaitable=asyncio.sleep(0),
@@ -95,6 +95,7 @@ def test_bisleep_sync():
     assert bisleep() == "success"
 
 
+@pytest.mark.asyncio
 async def test_bisleep_async():
     ret = await bisleep()
     assert ret == "success"
