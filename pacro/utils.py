@@ -14,7 +14,6 @@ def _get_caller():
         caller_name,
         frame.f_globals.get(caller_name)
     )
-
     return caller
 
 
@@ -31,3 +30,12 @@ def is_async_caller():
         return True
     else:
         return False
+
+
+def hasattr_recursive(obj, *names):
+    if not hasattr(obj, names[0]):
+        return False
+    elif len(names) > 1:
+        return hasattr_recursive(getattr(obj, names[0]), *names[1:])
+
+    return True

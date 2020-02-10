@@ -1,12 +1,10 @@
-import ast
-import astor
 import asyncio
-import inspect
 import time
 
-
 import pytest
-from pacro import utils
+
+from pacro import BisyncOption, bisync, utils
+
 
 """
 TODO work out "macro templates" for async/sync functions
@@ -58,80 +56,8 @@ TODO parse "macro templates" into coroutines or regular functions by rewriting a
 """
 
 
-class BisyncOption:
-    __slots__ = ['awaitable', 'sync_fallback']
-
-    def __init__(self, awaitable, sync_fallback):
-        self.awaitable = awaitable
-        self.sync_fallback = sync_fallback
-
 def function():
     time.sleep(5)
-
-def bisync(fn):
-    src = inspect.getsource(fn)
-    target_src = inspect.getsource(function)
-    print(src)
-    _tree = ast.parse(src)
-    _target_tree = ast.parse(target_src)
-    print("\n\nBEFORE PROCESSING: \n" + astor.dump_tree(_tree))
-    print("\n\nTARGET: \n" + astor.dump_tree(_target_tree))
-    tree = ast.fix_missing_locations(
-        CoroToFn().visit(_tree)
-    )
-    print("\n\nAFTER PROCESSING: \n" + astor.dump_tree(tree))
-    code = compile(
-        tree,
-        filename="<bisync generated>",
-        mode="exec")
-    module = inspect.getmodule(fn)  # TODO Oh No Module Imports!!!
-    exec(code, dir(module))
-    return (namespace[fn.__name__])
-
-    #if utils.is_async_caller():
-    #    tree = ast.copy_location(CoroToCoro().visit(_tree))
-    #else:
-    #    tree = CoroToFn().visit(_tree)
-    #compile(
-    #    ast.fix_missing_locations(tree),
-    #    filename="<ast>",
-    #    mode="exec"
-    #)
-
-
-class CoroToFn(ast.NodeTransformer):
-    def visit_AsyncFunctionDef(self, node):
-        node = self.generic_visit(node)
-        return ast.FunctionDef(
-            name = node.name,
-            args = node.args,
-            body = node.body,
-            decorator_list=[],  # TODO
-            returns = None,  # TODO
-            type_comment=None,  # TODO
-            )
-
-    def visit_Await(self, node):
-        node = self.generic_visit(node)
-        return node.value
-
-    def visit_Call(self, node):
-        expression = [
-            keyword.value for keyword in node.keywords
-            if keyword.arg == 'sync_fallback'].pop()
-        if expression:
-            node = expression
-        return node
-
-
-class CoroToCoro(ast.NodeTransformer):
-    def visit_Await(self, node):
-        assert isinstance(compile(node.value, 'ast', mode="single"), BisyncOption)
-        awaitable = node.value.awaitable
-        return ast.copy_location(
-            ast.Await(awaitable),
-            node
-        )
 
 
 def is_sync_caller():
@@ -156,17 +82,32 @@ def test_dual_sleep_not_coro():
     assert(is_sync_caller())
 
 
-@bisync
+@bisync(namespace=[time])
 async def bisleep():
     await BisyncOption(
-        awaitable = asyncio.sleep(5),
-        sync_fallback = time.sleep(5),
+        awaitable=asyncio.sleep(0),
+        sync_fallback=time.sleep(0),
     )
+    return "success"
 
 
 def test_bisleep_sync():
-    bisleep()
+    assert bisleep() == "success"
 
 
-#async def test_bisleep_async():
-#    await bisleep()
+async def test_bisleep_async():
+    ret = await bisleep()
+    assert ret == "success"
+
+def test_hasattr_recursive():
+    class Bushel:
+        amount = None
+
+    class Apples:
+        unit = Bushel
+
+    class Cargo:
+        fruit = Apples
+
+    assert utils.hasattr_recursive(Cargo(), 'fruit', 'unit', 'amount')
+    assert not utils.hasattr_recursive(Cargo(), 'unit', 'amount')
