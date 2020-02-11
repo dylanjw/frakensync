@@ -1,10 +1,39 @@
 import inspect
 
+from toolz import curry
 
-def _get_caller():
+
+def repeatedly(fn, val, repeat):
+    if repeat == 0:
+        return val
+    val = fn(val)
+    return repeatedly(fn , val, repeat - 1)
+
+
+@curry
+def lefthanded_getattr(name, obj):
+    return getattr(obj, name)
+
+
+def repeatedly_getattr(obj, attr, repeat=1):
+    return repeatedly(
+        lefthanded_getattr(attr),
+        obj,
+        repeat
+    )
+
+
+def _get_caller(stack_depth=0):
     """Figure out who's calling."""
+
+    _stack_depth = stack_depth + 2  # get out of current frames
     # Get the calling frame
-    frame = inspect.currentframe().f_back.f_back
+
+    frame = repeatedly_getattr(
+        obj = inspect.currentframe(),
+        attr = "f_back",
+        repeat = _stack_depth)
+
 
     # Pull the function name from FrameInfo
     caller_name = inspect.getframeinfo(frame)[2]
@@ -17,8 +46,8 @@ def _get_caller():
     return caller
 
 
-def is_async_caller():
-    caller = _get_caller()
+def is_async_caller(stack_depth=0):
+    caller = _get_caller(stack_depth)
 
     # If there's any indication that the function object is a
     # coroutine, return True. inspect.iscoroutinefunction() should

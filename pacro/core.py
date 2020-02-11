@@ -1,11 +1,12 @@
 import ast
+import copy
 import inspect
 import os
 from functools import partial, wraps
 
 from toolz import complement, compose, merge
 
-from .utils import hasattr_recursive
+from .utils import hasattr_recursive, is_async_caller
 
 DEBUG = os.getenv("PACRO_DEBUG")
 
@@ -25,6 +26,25 @@ class BisyncOption:
 PACRO_BUILTIN_NAMESPACE = {'BisyncOption': BisyncOption}
 
 
+async def async_target():
+    await asyncio.sleep(0)
+    return "success"
+
+
+def sync_target():
+    time.sleep(0)
+    return "success"
+
+
+def print_target_function(fn):
+    tree_str = compose(
+        astor.dump_tree,
+        ast.parse,
+        inspect.getsource,
+    )(fn)
+    print("!!!!!!TARGET!!!!!!: " + tree_str)
+
+
 def _bisync(fn=None, *, namespace=None):
     # when run without params fill in namespace
     if fn is None:
@@ -40,37 +60,65 @@ def _bisync(fn=None, *, namespace=None):
 
     _namespace =  merge(_namespace, PACRO_BUILTIN_NAMESPACE)
 
-    def build_fn():
+    def build_functions():
+
         src = inspect.getsource(fn)
-        tree = ast.parse(src)
+
+
+        # Im pretty sure the trees get mutated and that variable reassignements
+        # are just references to the original ast objects.
+        to_sync_tree = ast.parse(src)
+        to_async_tree = copy.deepcopy(to_sync_tree)
+
         if DEBUG:
             print(
                 "BEFORE: \n\n%s" %
-                astor.dump_tree(tree))
+                astor.dump_tree(to_async_tree))
 
-        transformed_tree = ast.fix_missing_locations(
-            _parse_tree(tree)
+        transformed_sync_tree = ast.fix_missing_locations(
+            _mutate_tree_to_function(to_sync_tree)
+        )
+
+        transformed_async_tree = ast.fix_missing_locations(
+            _mutate_tree_to_coro(to_async_tree)
         )
 
         if DEBUG:
             print(
                 "AFTER: \n\n%s" %
-                astor.dump_tree(transformed_tree))
+                astor.dump_tree(transformed_async_tree))
 
-        code = compile(
-            transformed_tree,
+        #print_target_function(async_target)
+
+        async_code = compile(
+            transformed_async_tree,
             filename="<bisync generated>",
             mode="exec")
-        exec(code, _namespace)
-        return (_namespace[fn.__name__])
+        exec(async_code, _namespace)
 
-    return build_fn()
+        sync_code = compile(
+            transformed_sync_tree,
+            filename="<bisync generated>",
+            mode="exec")
+        exec(sync_code, _namespace)
+
+        new_fn = _namespace[fn.__name__ + "_SYNC"]
+        new_coro = _namespace[fn.__name__ + "_ASYNC"]
+
+        return new_fn, new_coro
 
 
-def _parse_tree(tree):
-    MarkTree().visit(tree)
-    #CoroToFn().visit(tree)
-    return tree
+    new_fn, new_coro = build_functions()
+
+    def inner(*args, **kwargs):
+        if is_async_caller(stack_depth=1):
+            return new_coro(*args, **kwargs)
+        else:
+            return new_fn(*args, **kwargs)
+
+    return inner
+
+
 
 class BisyncFunctionDef(ast.AsyncFunctionDef):
     pass
@@ -161,7 +209,6 @@ class MarkTree(ast.NodeTransformer):
             # sync/async variants into custom fields in the BisyncAwait ast node type.
             node.async_value = get_awaitable_value(node.value.keywords)
             node.sync_value = get_sync_fallback_value(node.value.keywords)
-            breakpoint()
             node.value = None
         return node
 
@@ -172,9 +219,13 @@ class MarkTree(ast.NodeTransformer):
         return node
 
 
-class CoroToFn(ast.NodeTransformer):
+class StripToFn(ast.NodeTransformer):
     def visit_BisyncFunctionDef(self, node):
         node = self.generic_visit(node)
+
+        # Do I really want to do it this way?
+        # or should I have 2 separate namespaces?
+        node.name = node.name + "_SYNC"
         return ast.FunctionDef(
             name=node.name,
             args=node.args,
@@ -184,34 +235,32 @@ class CoroToFn(ast.NodeTransformer):
             type_comment=None,  # TODO
             )
 
-    def visit_Await(self, node):
+    def visit_BisyncAwait(self, node):
+        node = node.sync_value
         return node
-        #node = self.generic_visit(node)
-        #return node.value
 
-    def visit_Call(self, node):
+
+class StripToCoro(ast.NodeTransformer):
+    def visit_BisyncFunctionDef(self, node):
+        node = self.generic_visit(node)
+        node.name = node.name + "_ASYNC"
+        node.__class__ = ast.AsyncFunctionDef
         return node
-        # TODO: Not every call will be *our* call. Parse our special "markers".
-        #expression = [
-        #    keyword.value for keyword in node.keywords
-        #    if keyword.arg == 'sync_fallback'].pop()
-        #if expression:
-        #    node = expression
-        #return node
+
+    def visit_BisyncAwait(self, node):
+        node.value = node.async_value
+        return node
 
 
-class CoroToCoro(ast.NodeTransformer):
-    def visit_Await(self, node):
-        assert isinstance(
-                compile(
-                    node.value,
-                    'ast',
-                    mode="single"),
-                BisyncOption)
-        awaitable = node.value.awaitable
-        return ast.copy_location(
-            ast.Await(awaitable),
-            node
-        )
+_mutate_tree_to_coro = compose(
+    StripToCoro().visit,
+    MarkTree().visit,
+)
+
+
+_mutate_tree_to_function = compose(
+    StripToFn().visit,
+    MarkTree().visit,
+)
 
 bisync = _bisync

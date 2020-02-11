@@ -94,11 +94,11 @@ async def bisleep():
 def test_bisleep_sync():
     assert bisleep() == "success"
 
-
 @pytest.mark.asyncio
 async def test_bisleep_async():
     ret = await bisleep()
     assert ret == "success"
+
 
 def test_hasattr_recursive():
     class Bushel:
