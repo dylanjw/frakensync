@@ -3,7 +3,7 @@ import time
 
 import pytest
 
-from pacro import BisyncOption, bisync, utils
+from frankensync import AwaitOrNot, frankensync, utils
 
 
 """
@@ -12,39 +12,39 @@ TODO work out "macro templates" for async/sync functions
 
     e.g.:
 
-        @bisync
+        @frankensync
         def fn():
             await_maybe(asyncio.sleep(), sleep())
 
     or
 
-        @bisync
+        @frankensync
         def fn():
-            with pacro.block(condition):
+            with frankensync.block(condition):
                 '''execute code if condition is met'''
 
             # builds await syntax if necessary
-            pacro.assignment(symbol, val or expression)
+            frankensync.assignment(symbol, val or expression)
 
             # builds await syntax if necessary
-            pacro.statement(val or expression)
+            frankensync.statement(val or expression)
 
 
     or an entirely new syntax
 
-        @bisync
+        @frankensync
         def fn():
-            pacro = '''
+            frankensync = '''
 
         ***special syntax for creating macros
 
             '''
 
     or write code with await keyword that can be converted to native sync code!
-        from pacro import (bisync, BisyncOption)
-        @bisync
+        from frankensync import (frankensync, AwaitOrNot)
+        @frankensync
         async def fn():
-            await BisyncOption(
+            await AwaitOrNot(
                 awaitable = asyncio.sleep(5),
                 sync_fallback = sleep(5)
             )
@@ -82,21 +82,21 @@ def test_dual_sleep_not_coro():
     assert(is_sync_caller())
 
 
-@bisync(namespace=[time, asyncio])
-async def bisleep():
-    await BisyncOption(
+@frankensync(namespace=(time, asyncio))
+async def frankensleep():
+    await AwaitOrNot(
         awaitable=asyncio.sleep(0),
         sync_fallback=time.sleep(0),
     )
     return "success"
 
 
-def test_bisleep_sync():
-    assert bisleep() == "success"
+def test_frankensleep_sync():
+    assert frankensleep() == "success"
 
 @pytest.mark.asyncio
-async def test_bisleep_async():
-    ret = await bisleep()
+async def test_frankensleep_async():
+    ret = await frankensleep()
     assert ret == "success"
 
 

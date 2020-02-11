@@ -1,21 +1,21 @@
 [tool.poetry]
-name = "pacro"
+name = "frankensync"
 version = "0.0.0"
-description = "Macros for Python!"
+description = ""
 authors = ["Dylan Wilson <dylanjw@protonmail.com>"]
 
 [tool.poetry.dependencies]
 python = ">=3.6,<3.9"
-astor = "^0.8.1"
-toolz = "^0.10.0"
-pytest-asyncio = "^0.10.0"
+astor = ">=0.8,<0.9"
+toolz = ">=0.10,<0.11"
 
 [tool.poetry.dev-dependencies]
-pytest = "^5.3.5"
-pytest-asyncio = "^0.10.0"
-asyncio = "^3.4.3"
+pytest = ">=5.3,<5.4"
+pytest-asyncio = ">=0.10,<0.11"
+asyncio = ">=3.4,<3.5"
 flake8 = "^3.7.9"
 isort = "^4.3.21"
+tox = "^3.14.3"
 
 [tool.isort]
 multi_line_output=3

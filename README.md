@@ -1,48 +1,61 @@
-# pacro
+This is an alpha release. Do not use this package. Any part of the API is subject to change.
 
-Pythons `async` and `await` syntax makes writing and maintaining asynchronous code a dream.
+# frankensync
+
+Python introduced the `async` and `await` syntax in version 3.5, allowing asynchronous code that
+is easy to read and maintain.
+
 Except when you are maintaining a library with both a synchronous and asynchronous API. In that
 case, code reuse becomes a labyrinth of locked doors and `loop.run_until_complete`. This is 
 because introducing coroutines requires that you await on coroutines that await on couroutines that awai[...].
 Its turtles all the way down.
 
-## Be kind to turtles.
+Many projects could benefit from adding an asynchronous api to work with python's builtin 
+asynchronous framework, asyncio. Existing projects often struggle with bringing in async/await 
+syntax as it has a tendency to take over. 
 
-Wouldn't it be cool if we could write some code that could be expanded into both native
-synchronous and native asynchronous variants instead of having to jam one type of turtle into the 
-other?
+Many projects have taken the strategy of rewriting their code with async/await syntax 
+extending as far as needed, and providing the old synchronous api by wrapping the awaitable 
+api endpoints in `loop.run_util_complete()`, giving the synchronous api a performance hit.
+
+This module is an experiment to explore another strategy for maintaining sync and async api's 
+in the same project, using code generation from the AST.
+
+`frankensync` allows you to write code like the following:
 
 
 ``` python
-from pacro.bisync import (
-    bisync,
-    await_assign,
-    await_return,
+from frankensync import (
+    frankensync,
+    AwaitOrNot,
 )
 
 
-@bisync
 def update_conversion_rate_middleware(make_request):
-    def middleware(method, params)
+    @frankensync
+    async def middleware(method, params)
         rate = params.get('rate', False)
         if rate:
-            rate = await_assign(
-                coro = coro_pull_conversion_rate(price), 
-                sync = sync_pull_conversion_rate(price),
+            # AwaitOrNot allows us to code both async and sync execution pathways.
+            rate = await AwaitOrNot(
+                awaitable = coro_pull_conversion_rate(price), 
+                sync_fallback = sync_pull_conversion_rate(price),
             )
             params['rate'] = rate
 
-        await_return(make_request(method, params))
+        # make_request will be a coroutine or a regular callable depending on the
+        # calling context. Therefore we don't need to use an AwaitOrNot here.
+        return await make_request(method, params)
 ```
 
-## How the hell does this work?
+## How does this work?
 
-The above `update_conversion_rate_middleware` function gets expanded by modifying the `ast` into
-something equivalent to the following:
+The above `update_conversion_rate_middleware` undergoes some `ast` transformations that result in
+two function definitions equivalent to the following:
 
 ``` python
-async update_conversion_rate_middleware_coro(make_request):
-    def middleware(method, params)
+def update_conversion_rate_middleware_coro(make_request):
+    async def middleware_ASYNC(method, params)
         rate = params.get('rate', False)
         if rate:
             rate = await coro_pull_conversion_rate(price) 
@@ -50,8 +63,7 @@ async update_conversion_rate_middleware_coro(make_request):
 
         return await make_request(method, params)
 
-def update_conversion_rate_middleware_sync(make_request):
-    def middleware(method, params)
+    def middleware_SYNC(method, params)
         rate = params.get('rate', False)
         if rate:
             rate = sync_pull_conversion_rate(price)
@@ -60,20 +72,7 @@ def update_conversion_rate_middleware_sync(make_request):
         return make_request(method, params)
 ```
 
-After the function is expanded into the two variants, `pacro` will look through the `ast` for
-anywhere `update_conversion_rate_middleware` is called and replace it with the appropriate 
-generated function which in this case will depend on whether `make_request` is a coroutine
-and if `update_conversion_rate_middleware` is being awaited.
+`frankensync` returns a function that can determine if it is being called in an `await` statement and return either the generated async function definition or the regular function definition depending on the calling context.
 
-`pacro` has limitations. One limitation is that where ever `update_conversion_rate_middleware` is called, 
-it needs to be know if the `make_request` is a coroutine or a function before runtime.
-
-`pacro` is a library of tools that generate python code by modifiying your code's `ast`. 
-
-`pacro` is being developed to solve the challenge of code reuse with asynchronous/synchronous 
-code, but it will eventually be extended to a general macro implementation.
-
-# Do Not Use this Code
-
-This is a pre-alpha release (meaning nothing is written yet).
-Nothing works and every change may be breaking!
+The name `frankensync` was chosen to give developers pause before introducing this abomination into
+their projects. This is an experimental library, that is primarly serves as a proof of concept.
