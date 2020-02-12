@@ -18,7 +18,8 @@ because introducing coroutines requires that you await on coroutines that await 
 This module is an experiment to explore another strategy for maintaining sync and async api's 
 in the same project, using code generation from the AST.
 
-`frankensync` allows you to write code like the following:
+`frankensync` allows you to write code that can be used in both synchronous and async calling contexts, 
+using the `frankensync` decorator and helper objects.  See the following:
 
 
 ``` python
