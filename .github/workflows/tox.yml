@@ -1,4 +1,4 @@
-name: frankensync
+name: Run tox tests
 
 on: [push]
 
@@ -6,7 +6,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 4
+      max-parallel: 3
       matrix:
         python-version: [3.6, 3.7, 3.8]
 
@@ -19,6 +19,6 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install tox tox-gh-actions
+        pip install poetry tox tox-gh-actions
     - name: Test with tox
-      run: tox
+      run: tox -e py

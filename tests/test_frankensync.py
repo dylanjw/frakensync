@@ -110,5 +110,5 @@ def test_hasattr_recursive():
     class Cargo:
         fruit = Apples
 
-    assert utils.hasattr_recursive(Cargo(), 'fruit', 'unit', 'amount')
-    assert not utils.hasattr_recursive(Cargo(), 'unit', 'amount')
+    assert not utils.hasattr_recursive(Cargo(), 'fruit', 'unit', 'amount')
+    assert utils.hasattr_recursive(Cargo(), 'unit', 'amount')
