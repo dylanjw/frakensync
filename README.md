@@ -8,15 +8,6 @@ is easy to read and maintain.
 Except when you are maintaining a library with both a synchronous and asynchronous API. In that
 case, code reuse becomes a labyrinth of locked doors and `loop.run_until_complete`. This is 
 because introducing coroutines requires that you await on coroutines that await on couroutines that awai[...].
-Its turtles all the way down.
-
-Many projects could benefit from adding an asynchronous api to work with python's builtin 
-asynchronous framework, asyncio. Existing projects often struggle with bringing in async/await 
-syntax as it has a tendency to take over. 
-
-Many projects have taken the strategy of rewriting their code with async/await syntax 
-extending as far as needed, and providing the old synchronous api by wrapping the awaitable 
-api endpoints in `loop.run_util_complete()`, giving the synchronous api a performance hit.
 
 This module is an experiment to explore another strategy for maintaining sync and async api's 
 in the same project, using code generation from the AST.
