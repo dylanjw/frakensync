@@ -2,6 +2,7 @@
 name = "frankensync"
 version = "0.0.0"
 description = ""
+readme= "README.md"
 authors = ["Dylan Wilson <dylanjw@protonmail.com>"]
 
 [tool.poetry.dependencies]
