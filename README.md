@@ -73,4 +73,4 @@ def update_conversion_rate_middleware(make_request):
 `frankensync` returns a function that can determine if it is being called in an `await` statement and return either the generated async function definition or the regular function definition depending on the calling context.
 
 The name `frankensync` was chosen to give developers pause before introducing this abomination into
-their projects. This is an experimental library, that is primarly serves as a proof of concept.
+their projects. This is an experimental library, that primarly serves as a proof of concept.
