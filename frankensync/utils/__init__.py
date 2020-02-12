@@ -77,11 +77,14 @@ def unwrap_name_fn(name):
     return inner
 
 
-def is_frankensync_ast(ast_obj):
-    if (hasattr_recursive(ast_obj, 'func', 'id') and
+def is_frankensync_ast_decorator(ast_obj):
+    if (hasattr(ast_obj, 'id') and
+            ast_obj.id == 'frankensync'):
+        return True
+    elif (hasattr_recursive(ast_obj, 'func', 'id') and
             ast_obj.func.id == 'frankensync'):
         return True
     return False
 
 
-not_frankensync_ast = complement(is_frankensync_ast)
+not_frankensync_ast_decorator = complement(is_frankensync_ast_decorator)

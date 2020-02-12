@@ -4,8 +4,8 @@ from toolz import compose
 
 from .utils import (
     hasattr_recursive,
-    is_frankensync_ast,
-    not_frankensync_ast,
+    is_frankensync_ast_decorator,
+    not_frankensync_ast_decorator,
     unwrap_name_fn
 )
 from .utils.markers import (
@@ -60,10 +60,10 @@ class MarkTree(ast.NodeTransformer):
     """
     def visit_AsyncFunctionDef(self, node):
         node = self.generic_visit(node)
-        if any(map(is_frankensync_ast, node.decorator_list)):
+        if any(map(is_frankensync_ast_decorator, node.decorator_list)):
             # Remove `frankensync` from decorator list
             node.decorator_list = list(filter(
-                not_frankensync_ast, node.decorator_list))
+                not_frankensync_ast_decorator, node.decorator_list))
             node.__class__ = FrankensyncFunctionDef
         return node
 

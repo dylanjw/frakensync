@@ -6,81 +6,38 @@ import pytest
 from frankensync import AwaitOrNot, frankensync, utils
 
 
-"""
-TODO work out "macro templates" for async/sync functions
-    TODO How? Using dumb classes? Type annotation? Functions? Special syntax?
-
-    e.g.:
-
-        @frankensync
-        def fn():
-            await_maybe(asyncio.sleep(), sleep())
-
-    or
-
-        @frankensync
-        def fn():
-            with frankensync.block(condition):
-                '''execute code if condition is met'''
-
-            # builds await syntax if necessary
-            frankensync.assignment(symbol, val or expression)
-
-            # builds await syntax if necessary
-            frankensync.statement(val or expression)
-
-
-    or an entirely new syntax
-
-        @frankensync
-        def fn():
-            frankensync = '''
-
-        ***special syntax for creating macros
-
-            '''
-
-    or write code with await keyword that can be converted to native sync code!
-        from frankensync import (frankensync, AwaitOrNot)
-        @frankensync
-        async def fn():
-            await AwaitOrNot(
-                awaitable = asyncio.sleep(5),
-                sync_fallback = sleep(5)
-            )
-
-
-
-TODO parse "macro templates" into coroutines or regular functions by rewriting ast.
-
-"""
-
-
-def function():
-    time.sleep(5)
-
-
-def is_sync_caller():
-    if utils.is_async_caller():
-        return False
-    return True
-
-
-async def is_async_caller_coro():
-    if utils.is_async_caller():
-        await asyncio.sleep(0)
-        return True
-    return False
+def test_is_sync_caller_false():
+    assert not utils.is_async_caller()
 
 
 @pytest.mark.asyncio
-async def test_dual_sleep_coro():
-    assert(await is_async_caller_coro())
+async def test_is_async_caller_true():
+    assert utils.is_async_caller()
 
 
-def test_dual_sleep_not_coro():
-    assert(is_sync_caller())
+@pytest.mark.asyncio
+async def test_is_async_caller_true_with_stack_depth():
+    def one():
+        return utils.is_async_caller(stack_depth=1)
+    def two():
+        def inner():
+            return utils.is_async_caller(stack_depth=2)
+        return inner()
 
+    assert one()
+    assert two()
+
+@pytest.mark.asyncio
+async def test_is_async_caller_false_with_missing_stack_depth():
+    def one():
+        return utils.is_async_caller(stack_depth=0)
+    def two():
+        def inner():
+            return utils.is_async_caller(stack_depth=0)
+        return inner()
+
+    assert not one()
+    assert not two()
 
 @frankensync(namespace=(time, asyncio))
 async def frankensleep():
@@ -110,5 +67,5 @@ def test_hasattr_recursive():
     class Cargo:
         fruit = Apples
 
-    assert not utils.hasattr_recursive(Cargo(), 'fruit', 'unit', 'amount')
-    assert utils.hasattr_recursive(Cargo(), 'unit', 'amount')
+    assert utils.hasattr_recursive(Cargo(), 'fruit', 'unit', 'amount')
+    assert not utils.hasattr_recursive(Cargo(), 'unit', 'amount')
