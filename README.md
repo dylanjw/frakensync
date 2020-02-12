@@ -52,7 +52,7 @@ The above `update_conversion_rate_middleware` undergoes some `ast` transformatio
 two function definitions equivalent to the following:
 
 ``` python
-def update_conversion_rate_middleware_coro(make_request):
+def update_conversion_rate_middleware(make_request):
     async def middleware_ASYNC(method, params)
         rate = params.get('rate', False)
         if rate:
