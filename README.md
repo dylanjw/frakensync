@@ -1,5 +1,11 @@
 This is an alpha release. Do not use this package. Any part of the API is subject to change.
 
+TODO:
+
+- [ ] Write more tests
+- [ ] Add support for async with
+- [ ] Add support for async for
+
 # frankensync
 
 Python introduced the `async` and `await` syntax in version 3.5, allowing asynchronous code that
