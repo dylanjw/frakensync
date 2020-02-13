@@ -6,7 +6,7 @@ import pytest
 from frankensync import AwaitOrNot, frankensync, utils
 
 
-@frankensync(namespace=(time, asyncio))
+@frankensync
 async def frankensleep():
     await AwaitOrNot(
         awaitable=asyncio.sleep(0),
@@ -27,14 +27,14 @@ async def test_frankensleep_async():
 
 @frankensync
 async def await_on_frankensleep():
-    await asyncio.sleep()
+    await frankensleep()
     return True
 
 
-#@pytest.mark.asyncio
-#async def test_chaining_frankensync_defs_async_context():
-#    assert await_on_frankensleep()
-#
-#
-#def test_chaining_frankensync_defs_sync_context():
-#    assert await_on_frankensleep()
+@pytest.mark.asyncio
+async def test_chaining_frankensync_defs_async_context():
+    assert await_on_frankensleep()
+
+
+def test_chaining_frankensync_defs_sync_context():
+    assert await_on_frankensleep()

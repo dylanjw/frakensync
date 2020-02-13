@@ -22,35 +22,10 @@ class AwaitOrNot:
 FRANKENSYNC_BUILTIN_NAMESPACE = {'AwaitOrNot': AwaitOrNot}
 
 
-_mutate_tree_to_coro = compose(
-    transformers.StripToCoro().visit,
-    #transformers.MarkTree().visit,
-)
-
-
-_mutate_tree_to_function = compose(
-    transformers.StripToFn().visit,
-    #transformers.MarkTree().visit,
-)
-
-
 @lru_cache
-def frankensync(fn=None, *, namespace=None):
-    # when run without params fill in namespace
-    if fn is None:
-        return partial(frankensync, namespace=namespace)
+def frankensync(fn):
 
-    if isinstance(namespace, list):
-        raise ValueError("namespace must a a tuple not a list")
-    elif isinstance(namespace, tuple):
-        _namespace = {i.__name__: i for i in namespace}
-    # None or None-like should get normalized to empty dict
-    elif namespace is None:
-        _namespace = {}
-    else:
-        _namespace = namespace
-
-    _namespace =  merge(_namespace, FRANKENSYNC_BUILTIN_NAMESPACE)
+    _namespace =  fn.__globals__
 
     def build_functions():
 
@@ -61,22 +36,17 @@ def frankensync(fn=None, *, namespace=None):
         # are just references to the original ast objects.
 
         marked_tree = transformers.MarkTree().visit(ast.parse(src))
-        import astor
-        print(astor.dump_tree(marked_tree))
 
         to_sync_tree = copy.deepcopy(marked_tree)
         to_async_tree = copy.deepcopy(marked_tree)
 
         transformed_sync_tree = ast.fix_missing_locations(
-            _mutate_tree_to_function(to_sync_tree)
+            transformers.StripToFn().visit(to_sync_tree)
         )
 
         transformed_async_tree = ast.fix_missing_locations(
-            _mutate_tree_to_coro(to_async_tree)
+            transformers.StripToCoro().visit(to_async_tree)
         )
-
-        for tree in [transformed_async_tree, transformed_sync_tree]:
-            print(astor.dump_tree(tree))
 
         async_code = compile(
             transformed_async_tree,
