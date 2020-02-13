@@ -22,7 +22,7 @@ class AwaitOrNot:
 FRANKENSYNC_BUILTIN_NAMESPACE = {'AwaitOrNot': AwaitOrNot}
 
 
-@lru_cache
+@lru_cache(maxsize=100)
 def frankensync(fn):
 
     _namespace =  fn.__globals__
