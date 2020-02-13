@@ -24,13 +24,13 @@ FRANKENSYNC_BUILTIN_NAMESPACE = {'AwaitOrNot': AwaitOrNot}
 
 _mutate_tree_to_coro = compose(
     transformers.StripToCoro().visit,
-    transformers.MarkTree().visit,
+    #transformers.MarkTree().visit,
 )
 
 
 _mutate_tree_to_function = compose(
     transformers.StripToFn().visit,
-    transformers.MarkTree().visit,
+    #transformers.MarkTree().visit,
 )
 
 
@@ -59,8 +59,13 @@ def frankensync(fn=None, *, namespace=None):
 
         # Im pretty sure the trees get mutated and that variable reassignements
         # are just references to the original ast objects.
-        to_sync_tree = ast.parse(src)
-        to_async_tree = copy.deepcopy(to_sync_tree)
+
+        marked_tree = transformers.MarkTree().visit(ast.parse(src))
+        import astor
+        print(astor.dump_tree(marked_tree))
+
+        to_sync_tree = copy.deepcopy(marked_tree)
+        to_async_tree = copy.deepcopy(marked_tree)
 
         transformed_sync_tree = ast.fix_missing_locations(
             _mutate_tree_to_function(to_sync_tree)
@@ -70,6 +75,8 @@ def frankensync(fn=None, *, namespace=None):
             _mutate_tree_to_coro(to_async_tree)
         )
 
+        for tree in [transformed_async_tree, transformed_sync_tree]:
+            print(astor.dump_tree(tree))
 
         async_code = compile(
             transformed_async_tree,
@@ -90,6 +97,7 @@ def frankensync(fn=None, *, namespace=None):
 
 
     new_fn, new_coro = build_functions()
+
 
     def inner(*args, **kwargs):
         if is_async_caller(stack_depth=1):

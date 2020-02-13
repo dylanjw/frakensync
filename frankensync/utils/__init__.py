@@ -37,7 +37,6 @@ def _get_caller(stack_depth=0):
 
     # Pull the function name from FrameInfo
     caller_name = inspect.getframeinfo(frame)[2]
-
     # Get the function object
     caller = frame.f_locals.get(
         caller_name,

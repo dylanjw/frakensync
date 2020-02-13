@@ -18,7 +18,23 @@ async def frankensleep():
 def test_frankensleep_sync():
     assert frankensleep() == "success"
 
+
 @pytest.mark.asyncio
 async def test_frankensleep_async():
     ret = await frankensleep()
     assert ret == "success"
+
+
+@frankensync
+async def await_on_frankensleep():
+    await asyncio.sleep()
+    return True
+
+
+#@pytest.mark.asyncio
+#async def test_chaining_frankensync_defs_async_context():
+#    assert await_on_frankensleep()
+#
+#
+#def test_chaining_frankensync_defs_sync_context():
+#    assert await_on_frankensleep()

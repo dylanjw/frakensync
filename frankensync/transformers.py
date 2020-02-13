@@ -10,6 +10,7 @@ from .utils import (
 )
 from .utils.markers import (
     FrankensyncAwait,
+    FrankensyncAwaitOrNot,
     FrankensyncFor,
     FrankensyncFunctionDef,
     FrankensyncWith
@@ -72,12 +73,13 @@ class MarkTree(ast.NodeTransformer):
         # Right now, all `await` keywords must be paired with a AwaitOrNot, but
         # this breaks the ability to have nested async function definitions.
         if is_AwaitOrNot(node.value):
-            node.__class__ = FrankensyncAwait
-            # TODO Something is screwy here. The purpose is to move the ast values for
-            # sync/async variants into custom fields in the FrankensyncAwait ast node type.
+            node.__class__ = FrankensyncAwaitOrNot
             node.async_value = get_awaitable_value(node.value.keywords)
             node.sync_value = get_sync_fallback_value(node.value.keywords)
             node.value = None
+        else:
+            node.__class__ = FrankensyncAwait
+
         return node
 
     def visit_AsyncFor(self, node):
@@ -104,8 +106,12 @@ class StripToFn(ast.NodeTransformer):
             type_comment=None,  # TODO
             )
 
-    def visit_FrankensyncAwait(self, node):
+    def visit_FrankensyncAwaitOrNot(self, node):
         node = node.sync_value
+        return node
+
+    def visit_FrankensyncAwait(self, node):
+        node = node.value
         return node
 
 
@@ -116,6 +122,11 @@ class StripToCoro(ast.NodeTransformer):
         node.__class__ = ast.AsyncFunctionDef
         return node
 
-    def visit_FrankensyncAwait(self, node):
+    def visit_FrankensyncAwaitOrNot(self, node):
         node.value = node.async_value
+        node.__class__ = ast.Await
+        return node
+
+    def visit_FrankensyncAwait(self, node):
+        node.__class__ = ast.Await
         return node
