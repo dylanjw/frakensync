@@ -41,7 +41,7 @@ def update_conversion_rate_middleware(make_request):
             )
             params['rate'] = rate
 
-        # make_request will be a coroutine or a regular callable depending on the
+        # make_request will be a frankensync decorated function that will return a coroutine or a regular callable depending on the
         # calling context. Therefore we don't need to use an AwaitOrNot here.
         return await make_request(method, params)
 ```
